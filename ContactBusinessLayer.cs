@@ -1,6 +1,9 @@
-﻿using System;
+﻿using ContactsDataAccessLayer;
+using System;
 using System.Data;
-using ContactsDataAccessLayer;
+using System.Data.SqlClient;
+using System.Net;
+using System.Security.Policy;
 
 
 namespace ContactsBusinessLayer
@@ -190,5 +193,90 @@ namespace ContactsBusinessLayer
         {
             return clsContactDataAccess.DeleteContact(ID);
         }
+    }
+
+    public class clsCountry
+    {
+      public enum enMode { AddNew=0,Update =1 }
+      public enMode Mode =enMode.AddNew;
+
+        public int CountryID {  get; set; }
+
+        public string CountryName {  get; set; }
+
+        public clsCountry()
+        {
+           this.CountryID = -1;
+            this.CountryName = "";
+            Mode=enMode.AddNew;
+        }
+
+        private clsCountry(int CountryID,string CountryName)
+        {
+            this.CountryID = CountryID;
+            this.CountryName = CountryName;
+
+            Mode= enMode.Update;
+        }
+
+        private bool _AddNewCountry()
+        {
+            this.CountryID = clsCountryDataAccess.AddNewCountry(this.CountryName);
+            return (this.CountryID != -1);
+        }
+
+        private bool _UpdateCountry()
+        {
+            return clsCountryDataAccess.UpdateCountry(this.CountryID,this.CountryName);
+        }
+
+        static public clsCountry FindCountry(int CountryID)
+        {
+            string CountryName = "";
+
+            if (clsCountryDataAccess.GetCountryInfoByID(CountryID, ref CountryName))
+
+                return new clsCountry(CountryID, CountryName);
+            else
+                return null;
+        }
+        
+        static public bool DeleteCountry(int CountryID)
+        {
+            return clsCountryDataAccess.DeleteCountry(CountryID);
+        }
+
+        static public DataTable GetAllCountries()
+        {
+            return clsCountryDataAccess.GetAllCountries();
+        }
+
+        static public bool isCountryExist(int CountryID)
+        {
+            return clsCountryDataAccess.IsCountryExits(CountryID);
+        }
+
+        public bool SaveCountry()
+        {
+            switch (Mode)
+            {
+                case enMode.AddNew:
+                   if (_AddNewCountry())
+                   {
+                        Mode = enMode.Update;
+                        return true;
+                   }
+                   else
+                   {
+                       return false;
+                   }
+
+               case enMode.Update:
+                    return _UpdateCountry();
+
+            }
+            return false;
+        }
+
     }
 }

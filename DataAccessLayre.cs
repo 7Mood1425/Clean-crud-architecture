@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Net;
+using System.Security.Policy;
+
+
 
 namespace ContactsDataAccessLayer
 {
@@ -120,9 +125,9 @@ namespace ContactsDataAccessLayer
 
             string query = @"INSERT INTO Contacts(FirstName, LastName, Email, Phone, Address, DateOfBirth, CountryID, ImagePath)
                             VALUES (@FirstName, @LastName, @Email, @Phone, @Address,@DateOfBirth, @CountryID,@ImagePath); 
-                                  Select Scope_IDentity();"; 
+                                  Select Scope_IDentity();";
 
-            SqlCommand command=new SqlCommand(query, connection);
+            SqlCommand command = new SqlCommand(query, connection);
 
             command.Parameters.AddWithValue("@FirstName", FirstName);
             command.Parameters.AddWithValue("@LastName", LastName);
@@ -141,7 +146,7 @@ namespace ContactsDataAccessLayer
             try
             {
                 connection.Open();
-                object Result=command.ExecuteScalar();
+                object Result = command.ExecuteScalar();
 
                 if (Result != null && int.TryParse(Result.ToString(), out int insertedID))
                 {
@@ -158,7 +163,7 @@ namespace ContactsDataAccessLayer
             }
             finally
             {
-                connection.Close ();    
+                connection.Close();
             }
             return -1;
         }
@@ -310,15 +315,15 @@ namespace ContactsDataAccessLayer
         {
             DataTable dt = new DataTable();
 
-            SqlConnection connection=new SqlConnection(clsDataAccessSettings.ConnectionString);
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
             string query = "Select * From Contacts";
 
-            SqlCommand command=new SqlCommand(query, connection);
+            SqlCommand command = new SqlCommand(query, connection);
 
             try
             {
                 connection.Open();
-                SqlDataReader reader=command.ExecuteReader();
+                SqlDataReader reader = command.ExecuteReader();
 
                 if (reader.HasRows)
                 {
@@ -335,7 +340,7 @@ namespace ContactsDataAccessLayer
                 connection.Close();
             }
             return dt;
-          
+
         }
 
 
@@ -382,9 +387,9 @@ namespace ContactsDataAccessLayer
             string query = @"Delete Contacts 
                            where ContactID = @ContactID";
 
-            SqlCommand command=new SqlCommand(query, connection);
-            
-            command.Parameters.AddWithValue("@ContactID",ContactID);
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@ContactID", ContactID);
             try
             {
                 connection.Open();
@@ -399,38 +404,246 @@ namespace ContactsDataAccessLayer
             {
                 connection.Close();
             }
-            return (rowsAffected > 0) ;
+            return (rowsAffected > 0);
         }
 
-       public static bool IsContactExits(int ID)
-       {
+        public static bool IsContactExits(int ID)
+        {
             bool IsFound = false;
-           SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
             string query = "Select Found=1 from contacts where ContactID=@ContactID";
-            SqlCommand command=new SqlCommand(query, connection);
+            SqlCommand command = new SqlCommand(query, connection);
 
             command.Parameters.AddWithValue("@ContactID", ID);
             try
             {
                 connection.Open();
-                object result=command.ExecuteScalar();
+                object result = command.ExecuteScalar();
                 if (result != null && int.TryParse(result.ToString(), out int value))
                 {
-                    IsFound=(value>0);
+                    IsFound = (value > 0);
                 }
             }
             catch (Exception ex)
             {
                 //Console.WriteLine("Error: " + ex.Message);
-               IsFound=false;
+                IsFound = false;
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return IsFound;
+        }
+
+
+    }
+
+    public class clsCountryDataAccess
+    {
+        public static bool GetCountryInfoByID(int CountryID,ref string CountryName)
+        {
+            bool isFound=false;
+            SqlConnection connection =new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+            string query = "SELECT * FROM Countries WHERE CountryID = @CountryID";
+
+            SqlCommand command=new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryID",CountryID);
+       
+            try
+            {
+                connection.Open ();
+
+                SqlDataReader reader = command.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    isFound=true;
+
+                    CountryID = (int)reader["CountryID"];
+                    CountryName = (string)reader["CountryName"];
+                }
+                else
+                {
+                    isFound=false;
+                }
+                    reader.Close();
+            }
+            catch (Exception ex)
+            {
+                isFound=false;
             }
             finally
             {
                 connection.Close() ;
             }
+            return isFound;
+        }
+
+        public static int AddNewCountry( string CountryName)
+        {
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+            string query = @"INSERT INTO Countries( CountryName)
+                            VALUES (@CountryName); 
+                                  Select Scope_IDentity();";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryName", CountryName);
+
+            try
+            {
+                connection.Open();
+                object Result = command.ExecuteScalar();
+
+                if (Result != null && int.TryParse(Result.ToString(), out int insertedID))
+                {
+                    return insertedID;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return -1;
+        }
+
+        public static bool UpdateCountry( int CountryID, string CountryName)
+        {
+
+            int rowsAffected = 0;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+            string query = @"Update  Countries  
+                            set 
+                                CountryName = @CountryName
+                                where CountryID = @CountryID";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryID", CountryID);
+            command.Parameters.AddWithValue("@CountryName", CountryName);
+         
+            try
+            {
+                connection.Open();
+                rowsAffected = command.ExecuteNonQuery();
+
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine("Error: " + ex.Message);
+                return false;
+            }
+
+            finally
+            {
+                connection.Close();
+            }
+
+            return (rowsAffected > 0);
+        }
+
+        public static bool DeleteCountry(int CountryID)
+        {
+
+
+            int rowsAffected = 0;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = @"Delete From Countries 
+                           where CountryID = @CountryID";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryID", CountryID);
+            try
+            {
+                connection.Open();
+                rowsAffected = command.ExecuteNonQuery();
+
+            }
+            catch (Exception ex)
+            {
+                // Console.WriteLine("Error: " + ex.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return (rowsAffected > 0);
+        }
+
+        public static DataTable GetAllCountries()
+        {
+            DataTable dt = new DataTable();
+
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = "Select * From Countries";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            try
+            {
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+
+                if (reader.HasRows)
+                {
+                    dt.Load(reader);
+                }
+                reader.Close();
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine("Error: " + ex.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return dt;
+
+        }
+
+        public static bool IsCountryExits(int CountryID)
+        {
+            bool IsFound = false;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = "Select Found=1 from Countries where CountryID=@CountryID";
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryID", CountryID);
+            try
+            {
+                connection.Open();
+                object result = command.ExecuteScalar();
+                if (result != null && int.TryParse(result.ToString(), out int value))
+                {
+                    IsFound = (value > 0);
+                }
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine("Error: " + ex.Message);
+                IsFound = false;
+            }
+            finally
+            {
+                connection.Close();
+            }
             return IsFound;
-       }
-
+        }
 
     }
-    }
+}
