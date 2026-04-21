@@ -1,33 +1,82 @@
-# CRUD Console Application (3-Tier Architecture)
+# C# 3-Tier CRUD Application
 
-This is a C# console application that demonstrates a CRUD system using the 3-Tier Architecture pattern.
+## 📌 Overview
 
-## Features
+This is a simple console-based CRUD application built using **C#** and **3-Tier Architecture**.
+The project demonstrates how to separate application logic into different layers for better maintainability and scalability.
 
-* Create, Read, Update, Delete , Find operations
-* Separation of concerns using:
+---
 
-  * Presentation Layer
-  * Business Logic Layer
-  * Data Access Layer
+## 🧱 Architecture
 
-## Technologies
+The project follows the **3-Tier Architecture**:
+
+* **Presentation Layer (PL)**
+  Handles user interaction (Console UI)
+
+* **Business Logic Layer (BLL)**
+  Contains the core logic and validation
+
+* **Data Access Layer (DAL)**
+  Handles database operations (SQL Server)
+
+---
+
+## ⚙️ Features
+
+* Add new records (Create)
+* View records (Read)
+* Update existing records
+* Delete records
+* Search functionality
+
+---
+
+## 🗃️ Database
+
+The project uses a SQL Server database with a `Countries` table containing:
+
+* `CountryID`
+* `CountryName`
+* `Code`
+* `PhoneCode`
+
+---
+
+## 🚀 Technologies Used
 
 * C#
 * .NET
+* SQL Server
+* ADO.NET
 
-## Project Structure
+---
 
-* Presentation Layer: Handles user interaction (Console)
-* Business Layer: Contains application logic
-* Data Access Layer: Handles data operations
+## 🧠 What I Learned
 
-## How to Run
+* Applying 3-Tier Architecture in a real project
+* Separating concerns between layers
+* Working with ADO.NET and SQL queries
+* Handling basic CRUD operations
 
-1. Open the project in Visual Studio
-2. Build the solution
-3. Run the application
+---
 
-## Purpose
+## ▶️ How to Run
 
-This project is built for learning and demonstrating clean architecture and separation of concerns.
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/7Mood1425/csharp-3tier-crud.git
+   ```
+
+2. Open the project in Visual Studio
+
+3. Update the connection string in:
+
+   ```csharp
+   clsDataAccessSettings.ConnectionString
+   ```
+
+## 📬 Contact
+
+Feel free to connect or give feedback!
