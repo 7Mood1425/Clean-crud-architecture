@@ -1,249 +1,733 @@
-﻿
 using System;
+using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
-using ContactsBusinessLayer;
+using System.Data.SqlClient;
+using System.Net;
+using System.Security.Policy;
 
-namespace ContactsConsolApp
+
+
+namespace ContactsDataAccessLayer
 {
-    internal class Program
+    public class clsContactDataAccess
     {
-        static void testFindContact(int ID)
-
+        public static bool GetContactInfoByID(int ID, ref string FirstName, ref string LastName,
+            ref string Email, ref string Phone, ref string Address,
+            ref DateTime DateOfBirth, ref int CountryID, ref string ImagePath)
         {
-            clsContact Contact1 = clsContact.Find(ID);
+            bool isFound = false;
 
-            if (Contact1 != null)
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+            string query = "SELECT * FROM Contacts WHERE ContactID = @ContactID";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@ContactID", ID);
+
+            try
             {
-                Console.WriteLine(Contact1.FirstName + " " + Contact1.LastName);
-                Console.WriteLine(Contact1.Email);
-                Console.WriteLine(Contact1.Phone);
-                Console.WriteLine(Contact1.Address);
-                Console.WriteLine(Contact1.DateOfBirth);
-                Console.WriteLine(Contact1.CountryID);
-                Console.WriteLine(Contact1.ImagePath);
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+
+                if (reader.Read())
+                {
+
+                    // The record was found
+                    isFound = true;
+
+                    FirstName = (string)reader["FirstName"];
+                    LastName = (string)reader["LastName"];
+                    Email = (string)reader["Email"];
+                    Phone = (string)reader["Phone"];
+                    Address = (string)reader["Address"];
+                    DateOfBirth = (DateTime)reader["DateOfBirth"];
+                    CountryID = (int)reader["CountryID"];
+                    ImagePath = (string)reader["ImagePath"];
+
+                }
+                else
+                {
+                    // The record was not found
+                    isFound = false;
+                }
+
+                reader.Close();
+
+
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Contact [" + ID + "] Not found!");
+                //Console.WriteLine("Error: " + ex.Message);
+                isFound = false;
             }
+            finally
+            {
+                connection.Close();
+            }
+
+            return isFound;
         }
-        static void testAddNewContact()
 
-
-        {
-            clsContact Contact1 = new clsContact();
-            Contact1.FirstName = "Ahmed";
-            Contact1.LastName = "Saeed";
-            Contact1.Email = "Ahemd@gamil.com";
-            Contact1.Phone = "04958545";
-            Contact1.Address = "Main Street";
-            Contact1.DateOfBirth = new DateTime(2004, 11, 3, 10, 30, 0);
-            Contact1.CountryID = 1;
-            Contact1.ImagePath = "";
-
-            if (Contact1.Save())
-            {
-
-                Console.WriteLine("Contact Added Successfully with id=" + Contact1.ID);
-            }
-
-        }
-
-        //static void testUpdateContact(int ID)
-
+        //public static int AddNewContact(string FirstName, string LastName,
+        //    string Email, string Phone, string Address,
+        //    DateTime DateOfBirth, int CountryID, string ImagePath)
         //{
-        //    clsContact Contact1 = clsContact.Find(ID);
+        //    //this function will return the new contact id if succeeded and -1 if not.
 
-        //    if (Contact1 != null)
+        //    SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+        //    string query = @"INSERT INTO Contacts (FirstName, LastName, Email, Phone, Address,DateOfBirth, CountryID,ImagePath)
+        //                     VALUES (@FirstName, @LastName, @Email, @Phone, @Address,@DateOfBirth, @CountryID,@ImagePath);
+        //                     SELECT SCOPE_IDENTITY();";
+
+        //    SqlCommand command = new SqlCommand(query, connection);
+
+        //    command.Parameters.AddWithValue("@FirstName", FirstName);
+        //    command.Parameters.AddWithValue("@LastName", LastName);
+        //    command.Parameters.AddWithValue("@Email", Email);
+        //    command.Parameters.AddWithValue("@Phone", Phone);
+        //    command.Parameters.AddWithValue("@Address", Address);
+        //    command.Parameters.AddWithValue("@DateOfBirth", DateOfBirth);
+        //    command.Parameters.AddWithValue("@CountryID", CountryID);
+        //    command.Parameters.AddWithValue("@ImagePath", ImagePath);
+        //    try
         //    {
-        //        //update whatever info you want
-        //        Contact1.FirstName = "Fadi2";
-        //        Contact1.LastName = "Maher2";
-        //        Contact1.Email = "A2@a.com";
-        //        Contact1.Phone = "2222";
-        //        Contact1.Address = "222";
-        //        Contact1.DateOfBirth = new DateTime(1977, 11, 6, 10, 30, 0);
-        //        Contact1.CountryID = 1;
-        //        Contact1.ImagePath = "";
+        //        connection.Open();
 
-        //        if (Contact1.Save())
+        //        object result = command.ExecuteScalar();
+        //        connection.Close();
+
+        //        if (result != null && int.TryParse(result.ToString(), out int insertedID))
         //        {
-
-        //            Console.WriteLine("Contact updated Successfully ");
+        //            return insertedID;
         //        }
+        //        else
+        //        {
+        //            return -1;
+        //        }
+        //    }
+
+        //    catch (Exception ex)
+        //    {
+        //        //Console.WriteLine("Error: " + ex.Message);
 
         //    }
-        //    else
-        //    {
-        //        Console.WriteLine("Not found!");
-        //    }
+
+        //    return -1;
         //}
 
-        static void testUpdateContact(int ID)
+        public static int AddNewContact(string FirstName, string LastName, string Email, string Phone,
+            string Address, string Imagepath, DateTime DateOfBirth, int CountryID)
         {
-            clsContact Contact1 = clsContact.Find(ID);
-            if (Contact1 != null)
-            {
-                Contact1.FirstName = "Ahmed";
-                Contact1.LastName = "Ali";
-                Contact1.Email = "A2@a.com";
-                Contact1.Phone = "222845";
-                Contact1.Address = "60 St";
-                Contact1.DateOfBirth = new DateTime(1995, 11, 6, 10, 30, 0);
-                Contact1.CountryID = 1;
-                Contact1.ImagePath = "";
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
 
-                if (Contact1.Save())
+            string query = @"INSERT INTO Contacts(FirstName, LastName, Email, Phone, Address, DateOfBirth, CountryID, ImagePath)
+                            VALUES (@FirstName, @LastName, @Email, @Phone, @Address,@DateOfBirth, @CountryID,@ImagePath); 
+                                  Select Scope_IDentity();";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@FirstName", FirstName);
+            command.Parameters.AddWithValue("@LastName", LastName);
+            command.Parameters.AddWithValue("@Email", Email);
+            command.Parameters.AddWithValue("@Phone", Phone);
+            command.Parameters.AddWithValue("@Address", Address);
+            command.Parameters.AddWithValue("@DateOfBirth", DateOfBirth);
+            command.Parameters.AddWithValue("@CountryID", CountryID);
+
+
+            if (Imagepath != "")
+                command.Parameters.AddWithValue("@ImagePath", Imagepath);
+            else
+                command.Parameters.AddWithValue("@ImagePath", System.DBNull.Value);
+
+            try
+            {
+                connection.Open();
+                object Result = command.ExecuteScalar();
+
+                if (Result != null && int.TryParse(Result.ToString(), out int insertedID))
                 {
-                    Console.WriteLine("Contact Updated Successfully :)");
+                    return insertedID;
+                }
+                else
+                {
+                    return -1;
                 }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Not Found");
+                Console.WriteLine("Error: " + ex.Message);
             }
-
-
+            finally
+            {
+                connection.Close();
+            }
+            return -1;
         }
 
-        static void testDeleteContact(int ID)
+        public static bool UpdateContact(int ID, string FirstName, string LastName,
+            string Email, string Phone, string Address, DateTime DateOfBirth, int CountryID, string ImagePath)
         {
-            if (clsContact.IsContactExits(ID))
+
+            int rowsAffected = 0;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+            string query = @"Update  Contacts  
+                            set FirstName = @FirstName, 
+                                LastName = @LastName, 
+                                Email = @Email, 
+                                Phone = @Phone, 
+                                Address = @Address, 
+                                DateOfBirth = @DateOfBirth,
+                                CountryID = @CountryID,
+                                ImagePath =@ImagePath
+                                where ContactID = @ContactID";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@ContactID", ID);
+            command.Parameters.AddWithValue("@FirstName", FirstName);
+            command.Parameters.AddWithValue("@LastName", LastName);
+            command.Parameters.AddWithValue("@Email", Email);
+            command.Parameters.AddWithValue("@Phone", Phone);
+            command.Parameters.AddWithValue("@Address", Address);
+            command.Parameters.AddWithValue("@DateOfBirth", DateOfBirth);
+            command.Parameters.AddWithValue("@CountryID", CountryID);
+            command.Parameters.AddWithValue("@ImagePath", ImagePath);
+
+            try
             {
-
-                if (clsContact.DeleteContacts(ID))
-                    Console.WriteLine("Contact Deleted Successflly :)");
-                else
-                    Console.WriteLine("Faild to Deleted Conatact :(");
-            }
-            else
-                Console.WriteLine("The Contact with ID = " + ID + " is not found");
-
-
-
-        }
-        static void ListContacts()
-        {
-            DataTable DT = clsContact.GetAllContacts();
-            Console.WriteLine("Contacts Date: ");
-            foreach (DataRow row in DT.Rows)
-            {
-                Console.WriteLine($"{row["ContactID"]}, {row["FirstName"]}, {row["LastName"]} ");
-            }
-        }
-       static void testIsContactExist(int Id)
-        {
-            if (clsContact.IsContactExits(Id))
-                Console.WriteLine("Yes, Contact is there");
-            else
-                Console.WriteLine("No, Contact is not there");
-        }
-
-        //_________________________________________________________
-
-        static void testFindCountry(int ID)
-
-        {
-            clsCountry Country1 = clsCountry.FindCountry(ID);
-
-            if (Country1 != null)
-            {
-                Console.WriteLine("Country ID: " + Country1.CountryID);
-                Console.WriteLine("Country Name: " + Country1.CountryName);
+                connection.Open();
+                rowsAffected = command.ExecuteNonQuery();
 
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Country [" + ID + "] Not found!");
-            }
-        }
-
-        static void testAddNewCountry()
-
-
-        {
-            clsCountry country1 = new clsCountry();
-
-            country1.CountryName= "KSA";
-
-            if (country1.SaveCountry())
-            {
-
-                Console.WriteLine("Country Added Successfully with id=" + country1.CountryID);
+                //Console.WriteLine("Error: " + ex.Message);
+                return false;
             }
 
+            finally
+            {
+                connection.Close();
+            }
+
+            return (rowsAffected > 0);
         }
 
-        static void testUpdateCountry(int ID)
+        //public static bool UpdateContact(int ID, string FirstName, string LastName,
+        //string Email, string Phone, string Address, DateTime DateOfBirth, int CountryID, string ImagePath)
+        //{
+        //    int rowsAffected = 0;
+        //    SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+        //    string query = @"Update Contacts 
+        //                        set FirstName = @FirstName, 
+        //                            LastName = @LastName, 
+        //                            Email = @Email, 
+        //                            Phone = @Phone, 
+        //                            Address = @Address, 
+        //                            DateOfBirth = @DateOfBirth,
+        //                            CountryID = @CountryID,
+        //                            ImagePath =@ImagePath
+        //                            where ContactID = @ContactID;";
+
+        //    SqlCommand command = new SqlCommand(query, connection);
+
+        //    command.Parameters.AddWithValue("@ContactID", ID);
+        //    command.Parameters.AddWithValue("@FirstName", FirstName);
+        //    command.Parameters.AddWithValue("@LastName", LastName);
+        //    command.Parameters.AddWithValue("@Email", Email);
+        //    command.Parameters.AddWithValue("@Phone", Phone);
+        //    command.Parameters.AddWithValue("@Address", Address);
+        //    command.Parameters.AddWithValue("@DateOfBirth", DateOfBirth);
+        //    command.Parameters.AddWithValue("@CountryID", CountryID);
+
+        //    if (ImagePath != "")
+        //        command.Parameters.AddWithValue("@ImagePath", ImagePath);
+        //    else
+        //        command.Parameters.AddWithValue("@ImagePath", System.DBNull.Value);
+
+
+
+        //    try
+        //    {
+        //        connection.Open();
+        //        rowsAffected = command.ExecuteNonQuery();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //Console.WriteLine("Error: "+ex.Message);
+        //        return false;
+        //    }
+        //    finally
+        //    {
+        //        connection.Close();
+        //    }
+        //    return (rowsAffected > 0);
+        //}
+
+
+
+        //public static DataTable GetAllContacts()
+        //{
+
+        //    DataTable dt = new DataTable();
+        //    SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+        //    string query = "SELECT * FROM Contacts";
+
+        //    SqlCommand command = new SqlCommand(query, connection);
+
+        //    try
+        //    {
+        //        connection.Open();
+
+        //        SqlDataReader reader = command.ExecuteReader();
+
+        //        if (reader.HasRows)
+
+        //        {
+        //            dt.Load(reader);
+        //        }
+
+        //        reader.Close();
+
+        //    }
+
+        //    catch (Exception ex)
+        //    {
+        //        // Console.WriteLine("Error: " + ex.Message);
+        //    }
+        //    finally
+        //    {
+        //        connection.Close();
+        //    }
+
+        //    return dt;
+
+        //}
+
+        public static DataTable GetAllContacts()
         {
-            clsCountry Country1 = clsCountry.FindCountry(ID);
-            if (Country1 != null)
+            DataTable dt = new DataTable();
+
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = "Select * From Contacts";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            try
             {
-                Country1.CountryName= "Pakistan";
-              
-                if (Country1.SaveCountry())
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+
+                if (reader.HasRows)
                 {
-                    Console.WriteLine("Country Name Updated Successfully :)");
+                    dt.Load(reader);
+                }
+                reader.Close();
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine("Error: " + ex.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return dt;
+
+        }
+
+
+        //public static bool DeleteContact(int ContactID)
+        //{
+
+        //    int rowsAffected = 0;
+
+        //    SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+        //    string query = @"Delete Contacts 
+        //                        where ContactID = @ContactID";
+
+        //    SqlCommand command = new SqlCommand(query, connection);
+
+        //    command.Parameters.AddWithValue("@ContactID", ContactID);
+
+        //    try
+        //    {
+        //        connection.Open();
+
+        //        rowsAffected = command.ExecuteNonQuery();
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Console.WriteLine("Error: " + ex.Message);
+        //    }
+        //    finally
+        //    {
+
+        //        connection.Close();
+
+        //    }
+
+        //    return (rowsAffected > 0);
+
+        //}
+
+        public static bool DeleteContact(int ContactID)
+        {
+            int rowsAffected = 0;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = @"Delete Contacts 
+                           where ContactID = @ContactID";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@ContactID", ContactID);
+            try
+            {
+                connection.Open();
+                rowsAffected = command.ExecuteNonQuery();
+
+            }
+            catch (Exception ex)
+            {
+                // Console.WriteLine("Error: " + ex.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return (rowsAffected > 0);
+        }
+
+        public static bool IsContactExits(int ID)
+        {
+            bool IsFound = false;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = "Select Found=1 from contacts where ContactID=@ContactID";
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@ContactID", ID);
+            try
+            {
+                connection.Open();
+                object result = command.ExecuteScalar();
+                if (result != null && int.TryParse(result.ToString(), out int value))
+                {
+                    IsFound = (value > 0);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Not Found");
+                //Console.WriteLine("Error: " + ex.Message);
+                IsFound = false;
             }
+            finally
+            {
+                connection.Close();
+            }
+            return IsFound;
         }
 
-        static void testDeleteCountry(int ID)
-        {
-            if (clsCountry.isCountryExist(ID))
-            {
 
-                if (clsCountry.DeleteCountry(ID))
-                    Console.WriteLine("Country: Deleted Successflly :)");
+    }
+
+    public class clsCountryDataAccess
+    {
+        public static bool GetCountryInfoByID(int CountryID,ref string CountryName,ref string Code,ref string PhoneCode)
+        {
+            bool isFound=false;
+            SqlConnection connection =new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+            string query = "SELECT * FROM Countries WHERE CountryID = @CountryID";
+
+            SqlCommand command=new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryID",CountryID);
+            command.Parameters.AddWithValue("@Code", (object)Code ?? DBNull.Value);
+            command.Parameters.AddWithValue("@PhoneCode", (object)PhoneCode ?? DBNull.Value);
+
+
+            try
+            {
+                connection.Open ();
+
+                SqlDataReader reader = command.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    isFound=true;
+
+                    CountryName = (string)reader["CountryName"];
+                    Code = (string)reader["Code"];
+                    PhoneCode = (string)reader["PhoneCode"];
+                }
                 else
-                    Console.WriteLine("Faild to Deleted Country :(");
+                {
+                    isFound=false;
+                }
+                    reader.Close();
             }
-            else
-                Console.WriteLine("The Country with ID = " + ID + " is not found");
-
-        }
-
-        static void ListCountries()
-        {
-            DataTable DT = clsCountry.GetAllCountries();
-            Console.WriteLine("Countries List: ");
-            foreach (DataRow row in DT.Rows)
+            catch (Exception ex)
             {
-                Console.WriteLine($"ID: {row["CountryID"]}, Name: {row["CountryName"]}");
+                isFound=false;
             }
+            finally
+            {
+                connection.Close() ;
+            }
+            return isFound;
         }
 
-        static void isCountryExists(int Id)
+        public static bool GetCountryInfoByName(ref int CountryID,  string CountryName, ref string Code, ref string PhoneCode)
         {
-            if(clsCountry.isCountryExist(Id))
-                Console.WriteLine("Yes, Country is there");
-            else
-                Console.WriteLine("No, Country is not there");
+            bool isFound = false;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+            string query = "SELECT * FROM Countries WHERE CountryName = @CountryName";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryName", CountryName);
+            command.Parameters.AddWithValue("@Code", (object)Code ?? DBNull.Value);
+            command.Parameters.AddWithValue("@PhoneCode", (object)PhoneCode ?? DBNull.Value);
+
+
+            try
+            {
+                connection.Open();
+
+                SqlDataReader reader = command.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    isFound = true;
+
+                    CountryID = (int)reader["CountryID"];
+                    Code = (string)reader["Code"];
+                    PhoneCode = (string)reader["PhoneCode"];
+                }
+                else
+                {
+                    isFound = false;
+                }
+                reader.Close();
+            }
+            catch (Exception ex)
+            {
+                isFound = false;
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return isFound;
         }
 
-        static void Main(string[] args)
+        public static int AddNewCountry(string CountryName,string Code,string PhoneCode)
+        {
+            int CountryID =-1;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+
+            string query = @"INSERT INTO Countries(CountryName,Code,PhoneCode)
+                            VALUES (@CountryName,@Code,@PhoneCode); 
+                                 SELECT SCOPE_IDENTITY();";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryName", CountryName);
+            command.Parameters.AddWithValue("@Code", (object)Code ?? DBNull.Value);
+            command.Parameters.AddWithValue("@PhoneCode", (object)PhoneCode ?? DBNull.Value);
+
+            try
+            {
+                connection.Open();
+                object Result = command.ExecuteScalar();
+
+                if (Result != null && int.TryParse(Result.ToString(), out int insertedID))
+                {
+                    CountryID = insertedID;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return CountryID;
+        }
+
+        public static bool UpdateCountry( int CountryID, string CountryName, string Code, string PhoneCode)
         {
 
-            //testFindContact(1);
-            //testAddNewContact();
-            //testUpdateContact(1);
-            //ListContacts();
-            //testDeleteContact(100);
+            int rowsAffected = 0;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
 
-            //testIsContactExist(4);
-            //testIsContactExist(100);
+            string query = @"Update  Countries  
+                            set 
+                                CountryName = @CountryName,
+                                Code=@Code,PhoneCode=@PhoneCode
+                                where CountryID = @CountryID";
 
-            //testFindCountry(6);
-            //testAddNewCountry();
-            //testDeleteCountry(6);
-            ListCountries();
+            SqlCommand command = new SqlCommand(query, connection);
 
-            Console.ReadKey();
+            command.Parameters.AddWithValue("@CountryID", CountryID);
+            command.Parameters.AddWithValue("@CountryName", CountryName);
+            command.Parameters.AddWithValue("@Code", (object)Code??DBNull.Value);
+            command.Parameters.AddWithValue("@PhoneCode",(object) PhoneCode ?? DBNull.Value);
+         
+            try
+            {
+                connection.Open();
+                rowsAffected = command.ExecuteNonQuery();
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+                return false;
+            }
+
+            finally
+            {
+                connection.Close();
+            }
+
+            return (rowsAffected > 0);
+        }
+
+        public static bool DeleteCountry(int CountryID)
+        {
+
+
+            int rowsAffected = 0;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = @"Delete Countries 
+                           where CountryID = @CountryID";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryID", CountryID);
+            try
+            {
+                connection.Open();
+                rowsAffected = command.ExecuteNonQuery();
+
+            }
+            catch (Exception ex)
+            {
+                // Console.WriteLine("Error: " + ex.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return (rowsAffected > 0);
+        }
+
+        public static DataTable GetAllCountries()
+        {
+            DataTable dt = new DataTable();
+
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = "Select * From Countries";
+
+            SqlCommand command = new SqlCommand(query, connection);
+
+            try
+            {
+                connection.Open();
+                SqlDataReader reader = command.ExecuteReader();
+
+                if (reader.HasRows)
+                {
+                    dt.Load(reader);
+                }
+                reader.Close();
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine("Error: " + ex.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return dt;
 
         }
+
+        public static bool IsCountryExits(int CountryID)
+        {
+            bool IsFound = false;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = "Select Found=1 from Countries where CountryID=@CountryID";
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryID", CountryID);
+            try
+            {
+                connection.Open();
+                object result = command.ExecuteScalar();
+                if (result != null && int.TryParse(result.ToString(), out int value))
+                {
+                    IsFound = (value > 0);
+                }
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine("Error: " + ex.Message);
+                IsFound = false;
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return IsFound;
+        }
+
+        public static bool IsCountryExits(string CountryName)
+        {
+            bool IsFound = false;
+            SqlConnection connection = new SqlConnection(clsDataAccessSettings.ConnectionString);
+            string query = "Select Found=1 from Countries where CountryName=@CountryName";
+            SqlCommand command = new SqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@CountryName", CountryName);
+            try
+            {
+                connection.Open();
+                object result = command.ExecuteScalar();
+                if (result != null && int.TryParse(result.ToString(), out int value))
+                {
+                    IsFound = (value > 0);
+                }
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine("Error: " + ex.Message);
+                IsFound = false;
+            }
+            finally
+            {
+                connection.Close();
+            }
+            return IsFound;
+        }
+
     }
 }
