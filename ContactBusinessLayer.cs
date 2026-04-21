@@ -201,46 +201,67 @@ namespace ContactsBusinessLayer
       public enMode Mode =enMode.AddNew;
 
         public int CountryID {  get; set; }
-
         public string CountryName {  get; set; }
+        public string Code { get; set; }
+        public string PhoneCode {  get; set; }
 
         public clsCountry()
         {
            this.CountryID = -1;
             this.CountryName = "";
+            this.Code = "";
+            this.PhoneCode = "";
+
             Mode=enMode.AddNew;
         }
 
-        private clsCountry(int CountryID,string CountryName)
+        private clsCountry(int CountryID,string CountryName,string Code,string PhoneCode)
         {
             this.CountryID = CountryID;
             this.CountryName = CountryName;
-
+            this .Code = Code;  
+            this .PhoneCode = PhoneCode;
             Mode= enMode.Update;
         }
 
         private bool _AddNewCountry()
         {
-            this.CountryID = clsCountryDataAccess.AddNewCountry(this.CountryName);
+            this.CountryID = clsCountryDataAccess.AddNewCountry(this.CountryName,this.Code,this.PhoneCode);
             return (this.CountryID != -1);
         }
 
         private bool _UpdateCountry()
         {
-            return clsCountryDataAccess.UpdateCountry(this.CountryID,this.CountryName);
+            return clsCountryDataAccess.UpdateCountry(this.CountryID,this.CountryName,this.Code,this.PhoneCode);
         }
 
-        static public clsCountry FindCountry(int CountryID)
+        static public clsCountry Find(int CountryID)
         {
             string CountryName = "";
+            string Code = "";
+            string PhoneCode = "";
 
-            if (clsCountryDataAccess.GetCountryInfoByID(CountryID, ref CountryName))
+            if (clsCountryDataAccess.GetCountryInfoByID(CountryID, ref CountryName,ref Code,ref PhoneCode))
 
-                return new clsCountry(CountryID, CountryName);
+                return new clsCountry(CountryID, CountryName,Code,PhoneCode);
             else
                 return null;
         }
-        
+
+        static public clsCountry Find(string CountryName)
+        {
+            int CountryID = -1;
+            string Code = "";
+            string PhoneCode = "";
+
+
+            if (clsCountryDataAccess.GetCountryInfoByName(ref CountryID,  CountryName,ref Code,ref PhoneCode))
+
+                return new clsCountry(CountryID, CountryName,Code,PhoneCode);
+            else
+                return null;
+        }
+
         static public bool DeleteCountry(int CountryID)
         {
             return clsCountryDataAccess.DeleteCountry(CountryID);
@@ -254,6 +275,11 @@ namespace ContactsBusinessLayer
         static public bool isCountryExist(int CountryID)
         {
             return clsCountryDataAccess.IsCountryExits(CountryID);
+        }
+
+        static public bool isCountryExist(string CountryName)
+        {
+            return clsCountryDataAccess.IsCountryExits(CountryName);
         }
 
         public bool SaveCountry()
